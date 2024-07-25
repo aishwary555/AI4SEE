@@ -2,6 +2,7 @@ import cv2
 import cvzone
 from ultralytics import YOLO
 import math
+import time
 
 from sort import *
 
@@ -35,10 +36,13 @@ classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "trai
 mask = cv2.imread("dss.png")
 
 
+list_start = []
+list_end = []
 #Tracking       (using sort.py file) 
 tracker = Sort(max_age=20,min_hits=3,iou_threshold=0.3)
 
 limits = [400,297,673,297]
+limits_sec = [60,400,673,400]
 totalCounts = []
 
 while True:
@@ -70,6 +74,7 @@ while True:
             #Class Name
             cls = int(box.cls[0])
             currentclass = classNames[cls]
+            print(currentclass)
             
             if(currentclass == "car" or currentclass == "truck" or currentclass == "motorbike" or currentclass == "bus" or currentclass =="bicycle" and conf > 0.3):
                 
@@ -82,8 +87,10 @@ while True:
     resultTracker = tracker.update(detection)  
     
     cv2.line(img,(limits[0],limits[1]),(limits[2],limits[3]),(0,0,255),5)
+    cv2.line(img,(limits_sec[0],limits_sec[1]),(limits_sec[2],limits_sec[3]),(0,255,0),5)
     
-    
+
+
     for result in resultTracker:
         x1,y1,x2,y2,ID = result
         x1,y1,x2,y2 = int(x1),int(y1),int(x2),int(y2)
@@ -91,7 +98,7 @@ while True:
         
         w,h = x2-x1 , y2-y1
         cvzone.cornerRect(img,(x1,y1,w,h),l=9,rt=2,colorR=(255,255,0))           #here l is lenght of bounding box and rt is rectangle thickness
-        cvzone.putTextRect(img,f' {int(ID)}',(max(0,x1),max(35,y1)),scale=2,thickness=3,offset=10)
+        cvzone.putTextRect(img,f' {int(ID)}, {currentclass}',(max(0,x1),max(35,y1)),scale=1,thickness=2,offset=6)
                 
                 
         cx,cy = x1+w//2,y1+h//2
@@ -101,13 +108,20 @@ while True:
             if totalCounts.count(ID) == 0:                 # if id is not there in totalcounts then we will append it to totalCounts
                 totalCounts.append(ID)
                 cv2.line(img,(limits[0],limits[1]),(limits[2],limits[3]),(0,255,0),5)
-                
-                
+        
+        
+            dx,dy = x1+w//2,y1+h//2
+            if limits_sec[0] < dx < limits_sec[2] and limits_sec[1] - 15 < dy < limits_sec[3] + 15:
+                cv2.line(img,(limits_sec[0],limits_sec[1]),(limits_sec[2],limits_sec[3]),(0,255,0),5)
+            
+  
         cvzone.putTextRect(img,f"counts :{len(totalCounts)}",(50,50))
                 
     cv2.imshow("Image",img)
     cv2.imshow("ImageRegion",imgRegion)
     cv2.waitKey(0)
+    
+    
     
     
     
